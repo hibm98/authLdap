@@ -42,6 +42,7 @@ function authLdap_options_panel()
         update_option('authLDAPFilter',        authLdap_get_post('authLDAPFilter'));
         update_option('authLDAPNameAttr',      authLdap_get_post('authLDAPNameAttr'));
         update_option('authLDAPSecName',       authLdap_get_post('authLDAPSecName'));
+        update_option('authLDAPNickname'),     authLdap_get_post('authLDAPNickname'));
         update_option('authLDAPUidAttr',       authLdap_get_post('authLDAPUidAttr'));
         update_option('authLDAPMailAttr',      authLdap_get_post('authLDAPMailAttr'));
         update_option('authLDAPWebAttr',       authLdap_get_post('authLDAPWebAttr'));
@@ -64,6 +65,7 @@ function authLdap_options_panel()
     $authLDAPFilter        = get_option('authLDAPFilter');
     $authLDAPNameAttr      = get_option('authLDAPNameAttr');
     $authLDAPSecName       = get_option('authLDAPSecName');
+    $authLDAPNickname      = get_option('authLDAPNickname');
     $authLDAPMailAttr      = get_option('authLDAPMailAttr');
     $authLDAPUidAttr       = get_option('authLDAPUidAttr');
     $authLDAPWebAttr       = get_option('authLDAPWebAttr');
@@ -142,6 +144,7 @@ function authLdap_get_server() {
  * @conf string authLDAPFilter LDAP filter to use to find correct user, defaults to '(uid=%s)'
  * @conf string authLDAPNameAttr LDAP attribute containing user (display) name, defaults to 'name'
  * @conf string authLDAPSecName LDAP attribute containing second name, defaults to ''
+ * @conf string authLDAPNickname LDAP attribute containing user nickname, default to 'displayName'
  * @conf string authLDAPMailAttr LDAP attribute containing user e-mail, defaults to 'mail'
  * @conf string authLDAPUidAttr LDAP attribute containing user id (the username we log on with), defaults to 'uid'
  * @conf string authLDAPWebAttr LDAP attribute containing user website, defaults to ''
@@ -171,6 +174,7 @@ function authLdap_login($user, $username, $password, $already_md5 = false)
         $authLDAPFilter         = get_option('authLDAPFilter');
         $authLDAPNameAttr       = get_option('authLDAPNameAttr');
         $authLDAPSecName        = get_option('authLDAPSecName');
+        $authLDAPNickname       = get_option('authLDAPNickname');
         $authLDAPMailAttr       = get_option('authLDAPMailAttr');
         $authLDAPUidAttr        = get_option('authLDAPUidAttr');
         $authLDAPWebAttr        = get_option('authLDAPWebAttr');
@@ -199,6 +203,9 @@ function authLdap_login($user, $username, $password, $already_md5 = false)
         }
         if (! $authLDAPNameAttr) {
             $authLDAPNameAttr = 'name';
+        }
+        if (! $authLDAPNickname) {
+            $authLDAPNickname = 'displayName';
         }
         if (! $authLDAPMailAttr) {
             $authLDAPMailAttr = 'mail';
@@ -238,6 +245,7 @@ function authLdap_login($user, $username, $password, $already_md5 = false)
                 array(
                     $authLDAPNameAttr,
                     $authLDAPSecName,
+                    $authLDAPNickname,
                     $authLDAPMailAttr,
                     $authLDAPWebAttr,
                     $authLDAPUidAttr
@@ -259,9 +267,9 @@ function authLdap_login($user, $username, $password, $already_md5 = false)
             if (! isset($attribs[0][strtolower($authLDAPUidAttr)][0])) {
                 authLdap_debug('could not get user attributes from LDAP');
                 throw new UnexpectedValueException('The user-ID attribute has not been returned');
-                
+
             }
-            
+
             $dn = $attribs[0]['dn'];
             $realuid = $attribs[0][strtolower($authLDAPUidAttr)][0];
         } catch(Exception $e) {
@@ -322,6 +330,11 @@ function authLdap_login($user, $username, $password, $already_md5 = false)
         // last name
         if (isset($attribs[0][strtolower($authLDAPSecName)][0])) {
             $user_info['last_name'] = $attribs[0][strtolower($authLDAPSecName)][0];
+        }
+
+        // Nickname
+        if (isset($attribs[0][strtolower($authLDAPNickname)][0])) {
+            $user_info['nickname'] = $attribs[0][strtolower($authLDAPNickname)][0];
         }
 
         // mail address
@@ -441,7 +454,7 @@ function authLdap_user_role($uid) {
  * @return string role, empty string if no mapping found, first found role otherwise
  * @conf array authLDAPGroups, associative array, role => ldap_group
  * @conf string authLDAPGroupAttr, ldap attribute that holds name of group
- * @conf string authLDAPGroupFilter, LDAP filter to find groups. can contain %s and %dn% placeholders 
+ * @conf string authLDAPGroupFilter, LDAP filter to find groups. can contain %s and %dn% placeholders
  */
 function authLdap_groupmap($username, $dn)
 {
@@ -479,16 +492,16 @@ function authLdap_groupmap($username, $dn)
             $grp[] = $groups[$i][strtolower($authLDAPGroupAttr)][$k];
         }
     }
-    
+
     authLdap_debug('LDAP groups: ' . json_encode($grp));
-    
+
     // Check whether the user is member of one of the groups that are
     // allowed acces to the blog. If the user is not member of one of
     // The groups throw her out! ;-)
     // If the user is member of more than one group only the first one
     // will be taken into account!
 
-    $role = '';    
+    $role = '';
     foreach ($authLDAPGroups as $key => $val) {
         $currentGroup = explode(',', $val);
         // Remove whitespaces around the group-ID
