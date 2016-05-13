@@ -256,17 +256,6 @@
             <table class="form-table">
                 <tr>
                     <th>
-                        <label for="authLDAPGroupEnable">Use LDAP Groups to map to Roles?</label>
-                    </th>
-                    <td>
-                        <input type="checkbox" name="authLDAPGroupEnable" id="authLDAPGroupEnable" value="1"<?php echo $tGroupChecked; ?>/>
-                        <p class="description">
-                            Search LDAP for user's groups and map to Wordpress Roles.
-                        </p>
-                    </td>
-                </tr>
-                <tr>
-                    <th>
                         <label for="authLDAPGroupOverUser">LDAP Groups override role of existing users?</label>
                     </th>
                     <td>
@@ -289,6 +278,23 @@
                         </p>
                         <p class="description">
                             This field defaults to <strong>gidNumber</strong>
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">
+                        <label for="authLDAPGroupSeparator">Group-Separator</label>
+                    </th>
+                    <td>
+                        <input type="text" name="authLDAPGroupSeparator" id="authLDAPGroupSeparator" placeholder=","
+                          class="regular-text" value="<?php echo $authLDAPGroupSeparator; ?>" />
+                        <p class="description">
+                            This attribute defines the separator used for the Group-IDs listed in the
+                            Groups defined further down. This is useful if the value of Group-Attribute
+                            listed above can contain a comma (for example, when using the memberof attribute)
+                        </p>
+                        <p class="description">
+                            This field defaults to <strong>, (comma)</strong>
                         </p>
                     </td>
                 </tr>
